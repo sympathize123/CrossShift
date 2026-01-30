@@ -1,0 +1,32 @@
+# Outputs / results
+results/
+cache_normalized/
+distance_cache_*/
+distance_figures_*/
+concept_shift_k_plots*/
+prauc_threshold_plots/
+correlation_heatmaps/
+figures/
+result/
+logs/
+
+# Data (kept locally, not tracked)
+data/
+Archived/
+Archived_Tomiris/
+RQ1/data/
+RQ1/datasets/**/results/
+
+# Visualization / exploratory
+visual/
+RQ1/datasets/**/.ipynb_checkpoints/
+
+# Cleanup quarantine
+__trash__/
+
+# Local env / caches
+__pycache__/
+*.py[cod]
+.pt_tmp/
+catboost_info/
+.DS_Store

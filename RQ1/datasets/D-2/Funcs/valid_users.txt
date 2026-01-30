@@ -1,0 +1,103 @@
+# Valid Users for Preprocessing_hourly.ipynb
+# These users have sufficient location data for POI clustering
+# Generated from find_problematic_user.py analysis
+
+# Total users tested: 102
+# Working users: 85
+# Problematic users: 17
+
+# VALID USERS (85 users):
+P033
+P037
+P038
+P039
+P040
+P043
+P044
+P045
+P046
+P047
+P048
+P050
+P051
+P052
+P054
+P055
+P056
+P057
+P058
+P059
+P060
+P061
+P062
+P063
+P064
+P065
+P066
+P067
+P068
+P069
+P071
+P072
+P074
+P075
+P077
+P078
+P079
+P081
+P083
+P084
+P085
+P086
+P087
+P088
+P089
+P090
+P091
+P092
+P093
+P094
+P095
+P098
+P099
+P100
+P101
+P102
+P103
+P104
+P105
+P106
+P107
+P108
+P109
+P110
+P111
+P112
+P114
+P115
+P116
+P117
+P118
+P120
+P121
+P122
+P123
+P124
+P125
+P126
+P127
+P129
+P130
+P131
+P132
+P133
+P135
+P136
+P138
+
+# PROBLEMATIC USERS (17 users) - AVOID THESE:
+# P035, P036, P041, P042, P049, P053, P070, P073, P076, P080, P082, P096, P097, P113, P119, P128, P137
+
+# Usage in notebook:
+# valid_users = [line.strip() for line in open('valid_users.txt').readlines() if line.strip() and not line.startswith('#')]
+# Then filter your data processing to only include users in valid_users list 
