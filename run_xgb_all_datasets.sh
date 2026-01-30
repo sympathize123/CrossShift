@@ -6,17 +6,32 @@ set -euo pipefail
 eval "$(conda shell.bash hook)"
 conda activate navsim
 
-DATASETS=("D#1" "D#2" "D#3" "D#4" "crosscheck" "studentlife" "step_count")
+DATASETS=("D#1" "D#2" "D#3" "D#4" "crosscheck" "studentlife" "step_count" "GLOBEM" "collegeexperience")
 
 echo "Running xgboost 1-stage pipeline for datasets: ${DATASETS[*]}"
 RESULTS_DIR="${CHI_RESULTS_DIR:-results}"
 
 for dataset in "${DATASETS[@]}"; do
+  existing_summary=$(ls "${RESULTS_DIR}/distance_figures_xgb_${dataset}"/k*/combined_results_summary.csv 2>/dev/null | head -n 1 || true)
+  if [[ -n "${existing_summary}" ]]; then
+    echo "==> dataset=${dataset} (skip: ${existing_summary} exists)"
+    continue
+  fi
+
   echo "==> dataset=${dataset}"
+  if python run_model_pipeline_1stage.py \
+      --model xgb \
+      --dataset "${dataset}" \
+      --split_strategy temporal \
+      --test_size 0.2; then
+    continue
+  fi
+
+  echo "    temporal split failed; retrying with random split"
   python run_model_pipeline_1stage.py \
     --model xgb \
     --dataset "${dataset}" \
-    --split_strategy temporal \
+    --split_strategy random \
     --test_size 0.2
 done
 

@@ -106,6 +106,30 @@ DATASET_CONFIGS = {
       "Sleep": ["SLP_START", "SLP_END", "SLP_DUR"]
     }
   },
+  "collegeexperience": {
+    "data_path": "data/Archived/college_experience_stress_binary_fill.pkl",
+    "pra_threshold": 0.6,
+    "auroc_threshold": 0.6,
+    "top_k": 40,
+    "concept_shift_k": 2,
+    "concept_shift_min_samples": 20,
+    "category_prefixes": {
+      "PhoneUsage": ["unlock_duration_ep_0", "unlock_num_ep_0"],
+      "Social": [
+        "call_miss_num_ep_0", "call_num_ep_0", "call_duration_ep_0", "sms_num_ep_0",
+        "audio_convo_duration_ep_0", "audio_convo_num_ep_0"
+      ],
+      "Physical": ["act_in_vehicle_ep_0", "act_still_ep_0", "act_physical_ep_0", "step_ep_0"],
+      "Mobility": [
+        "loc_dist_ep_0", "loc_visit_num_ep_0", "loc_max_dis_from_campus_ep_0",
+        "loc_home_per", "loc_study_per", "loc_other_per"
+      ],
+      "Sleep": [
+        "sleep_duration", "sleep_end", "std_sleep_end", "sleep_start",
+        "std_sleep_start", "std_sleep_duration"
+      ]
+    }
+  },
   "D#2": {
     "data_path": "data/Archived/stress_binary_personal-full_D#2.pkl",
     "pra_threshold": 0.6,
