@@ -1,11 +1,23 @@
 CrossShift codebase for shift analysis and transferability across datasets.
 
-## Repository Organization
+## Folder Structure
 
-- `RQ1/` — shift-type analysis scripts and data manifests.
-- `RQ2/` — transferability pipelines, configs, and OOD detection code.
-- `visual/` — visualization scripts (kept for reference; not tracked in git).
-- `results/` — generated outputs (gitignored by default).
+```
+RQ1/
+  datasets/            # shift-type analysis scripts
+  sample_features/     # small sample feature files (reviewers)
+  data_manifest.csv
+RQ2/
+  run_model_pipeline_1stage.py
+  dataset_config.py
+  models/
+  utils/
+  pipeline/
+  sample_features/     # small sample feature files (reviewers)
+  ood_detection/       # OOD detection code + figure
+visual/                # visualization scripts (not tracked in git)
+results/               # generated outputs (gitignored by default)
+```
 
 ### Sample Feature Files (for reviewers)
 
@@ -19,10 +31,10 @@ released on the official GitHub.
 
 ## Quick Start (RQ2)
 
-### 1) Run the Pipeline
+### Run the Pipeline (1-stage)
 
 ```bash
-python RQ2/run_model_pipeline.py \
+python RQ2/run_model_pipeline_1stage.py \
   --model xgb \
   --dataset D#4 \
   --split_strategy random \
@@ -32,7 +44,7 @@ python RQ2/run_model_pipeline.py \
   --top_k 40
 ```
 
-- Outputs and caches go under `results/` by default.
+- Outputs go under `results/` by default.
 - Override output root with `CHI_RESULTS_DIR=/path/to/results`.
 
 ## OOD Detection (RQ2)
@@ -41,8 +53,6 @@ The OOD detection code and figure referenced in the paper are provided in:
 - `RQ2/ood_detection/run_ood_detection_loso.py`
 - `RQ2/ood_detection/create_merged_prauc_figure_dataset.py`
 - `RQ2/ood_detection/ood_detection_loso_prauc_merged_D-4.png`
-
-## Notes
 
 ## RQ1 Notes
 
