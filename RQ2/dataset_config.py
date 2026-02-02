@@ -4,7 +4,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from paths import DATA_ARCHIVED, DATA_TOMIRIS, SAMPLE_ROOT
+try:
+    from .paths import DATA_ARCHIVED, DATA_TOMIRIS, SAMPLE_ROOT
+except ImportError:
+    from paths import DATA_ARCHIVED, DATA_TOMIRIS, SAMPLE_ROOT
 
 
 DATA_MODE = os.getenv("CHI_DATA_MODE", "sample").strip().lower()

@@ -1,15 +1,27 @@
 from __future__ import annotations
 
-from models import (
-    XGBModel,
-    LGBMModel,
-    CatBoostModel,
-    MLPModel,
-    TabTransformerModel,
-    FTTransformerModel,
-    NODEModel,
-    TabResNetModel,
-)
+try:
+    from ..models import (
+        XGBModel,
+        LGBMModel,
+        CatBoostModel,
+        MLPModel,
+        TabTransformerModel,
+        FTTransformerModel,
+        NODEModel,
+        TabResNetModel,
+    )
+except ImportError:
+    from models import (
+        XGBModel,
+        LGBMModel,
+        CatBoostModel,
+        MLPModel,
+        TabTransformerModel,
+        FTTransformerModel,
+        NODEModel,
+        TabResNetModel,
+    )
 
 
 def get_model_by_name(model_name: str, num_features: int, random_state: int = 42, **kwargs):

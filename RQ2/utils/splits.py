@@ -6,7 +6,10 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from splitters import loso_split_indices, stratified_group_kfold_indices
+try:
+    from ..splitters import loso_split_indices, stratified_group_kfold_indices
+except ImportError:
+    from splitters import loso_split_indices, stratified_group_kfold_indices
 
 
 def _assemble_split(
