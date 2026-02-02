@@ -14,7 +14,8 @@ for each dataset (typically a small subset of users/rows). Full feature files wi
 released on the official GitHub.
 
 - RQ1 samples: `RQ1/sample_features/<dataset>/...`
-- RQ2 samples: `RQ2/sample_features/<dataset>/features_sample.pkl`
+- RQ2 samples: `RQ2/sample_features/<dataset>/<data_basename>.pkl` (same basename as `RQ2/dataset_config.py`)
+  - If the full data file is missing, the RQ2 pipeline will automatically fall back to the matching sample file.
 
 ## Quick Start (RQ2)
 
