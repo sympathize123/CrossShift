@@ -5,154 +5,45 @@ Individual Model Pipeline Runner
 Usage: python RQ2/run_model_pipeline_1stage.py --model lgbm
 """
 
-import sys
-import os
-import subprocess
+from utils.runtime import configure_runtime
 
-# original_stderr = sys.stderr
-# sys.stderr = open(os.devnull, 'w')
-
-os.environ["PYTHONWARNINGS"] = "ignore"
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
-os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
-os.environ["OMP_NUM_THREADS"] = "1"
-
-import warnings
-import logging
-
-warnings.simplefilter("ignore")
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", message=".*is_sparse.*")
-warnings.filterwarnings("ignore", message=".*is_categorical_dtype.*")
-warnings.filterwarnings("ignore", message=".*SparseDtype.*")
-warnings.filterwarnings("ignore", message=".*CategoricalDtype.*")
-warnings.filterwarnings("ignore", message=".*swigvarlink.*")
-warnings.filterwarnings("ignore", message=".*ot.gpu not found.*")
-warnings.filterwarnings("ignore", message=".*coupling computation will be in cpu.*")
-warnings.filterwarnings("ignore", message=".*computation placer already registered.*")
-warnings.filterwarnings("ignore", message=".*Unable to register.*")
-
-logging.getLogger('tensorflow').setLevel(logging.ERROR)
-logging.getLogger('absl').setLevel(logging.ERROR)
+configure_runtime()
 
 import argparse
-import os
-import re
-import json
 from datetime import datetime
+import json
+import os
+import subprocess
+import sys
 import numpy as np
 import pandas as pd
 import cloudpickle
 from joblib import Parallel, delayed, parallel_backend
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy.stats import spearmanr, pearsonr, wilcoxon
-from statsmodels.stats.multitest import fdrcorrection  # type: ignore
+from scipy.stats import spearmanr, pearsonr
 from sklearn.metrics import roc_auc_score
 from sklearn.linear_model import LinearRegression
 
 from dataset_config import DATASET_CONFIGS
-from utility_deep import *
-from models import *
-
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-warnings.filterwarnings("ignore", category=UserWarning)
-warnings.filterwarnings("ignore", message=".*builtin type swigvarlink.*")
-warnings.filterwarnings("ignore", message=".*ot.gpu not found.*")
+from pipeline.shift_utils import extract_shift_type_from_text, parse_cat_and_shift_from_key
+from utils.io import load
+from utils.models import get_model_by_name, is_tree_model
+from utils.splits import create_train_test_splits
+from utils.stats import fdr_bh_series, sign_test_greater, wilcoxon_greater
+from utility_deep import (
+    normalize_data,
+    select_top_model_features,
+    compute_pairwise_wasserstein_matrix,
+    compute_pairwise_label_shift_matrix,
+    compute_pairwise_conditional_matrix,
+    compute_pairwise_concept_shift_matrix,
+    plot_distance_matrix_and_save,
+    save_correlation_heatmaps,
+)
 
 RESULTS_DIR = os.environ.get("CHI_RESULTS_DIR", "results")
 PROCESSED_DIR = os.path.join(RESULTS_DIR, "processed")
-
-def wilcoxon_greater(x):
-    """One-sided Wilcoxon test for positive median.
-    
-    Args:
-        x: Array-like of numeric values.
-        
-    Returns:
-        float: P-value for H1: median(x) > 0, or nan if insufficient data.
-    """
-    x = np.array(x)
-    x = x[~np.isnan(x)]
-    if len(x) < 3:
-        return np.nan
-    try:
-        _, p = wilcoxon(x, alternative='greater')
-        return p
-    except:
-        return np.nan
-
-def sign_test_greater(x):
-    """One-sided sign test for positive bias.
-    
-    Args:
-        x: Array-like of numeric values.
-        
-    Returns:
-        float: P-value for H1: P(x > 0) > 0.5, or nan if insufficient data.
-    """
-    x = np.array(x)
-    x = x[~np.isnan(x)]
-    if len(x) < 3:
-        return np.nan
-    try:
-        from scipy.stats import binom_test
-        n_pos = (x > 0).sum()
-        n = len(x)
-        return binom_test(n_pos, n, p=0.5, alternative='greater')
-    except:
-        return np.nan
-
-def fdr_bh_series(p_values):
-    """Apply Benjamini-Hochberg FDR correction.
-    
-    Args:
-        p_values: Array-like of p-values.
-        
-    Returns:
-        numpy.ndarray: FDR-corrected q-values.
-    """
-    p_arr = np.array(p_values)
-    mask = ~np.isnan(p_arr)
-    if not mask.any():
-        return p_arr
-    try:
-        _, q_adj = fdrcorrection(p_arr[mask], alpha=0.05, method='indep')
-        result = np.full_like(p_arr, np.nan)
-        result[mask] = q_adj
-        return result
-    except:
-        return p_arr
-
-def extract_shift_type_from_text(s: str) -> str:
-    """Extract shift type from shift name.
-    
-    Args:
-        s: Shift name string (e.g., 'PhoneUsage Covariate shift').
-        
-    Returns:
-        str: Shift type (e.g., 'Covariate').
-    """
-    tokens = str(s).strip().split()
-    if len(tokens) >= 2 and tokens[-1].lower() == 'shift':
-        return tokens[-2]
-    m = re.search(r'(\w+)\s+shift', str(s))
-    return m.group(1) if m else str(s)
-
-def parse_cat_and_shift_from_key(key: str):
-    """Parse category and shift from combined key.
-    
-    Args:
-        key: Combined key string (e.g., 'PhoneUsage_PhoneUsage Covariate shift').
-        
-    Returns:
-        tuple: (category, full_shift_name)
-    """
-    parts = key.split('_', 1)
-    cat = parts[0]
-    shift_full = parts[1].replace('_', ' ') if len(parts) > 1 else parts[0]
-    return cat, shift_full
 
 def main():
     """Main pipeline execution function."""
