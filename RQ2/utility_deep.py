@@ -165,20 +165,7 @@ transform = {
 # ===============================================================================
 
 def load(path: str):
-    """Load an object from a pickle file, with a sample fallback."""
-    if not os.path.exists(path):
-        # Fallback: look for a sample file with the same basename under RQ2/sample_features
-        base_name = os.path.basename(path)
-        sample_root = os.path.join(os.path.dirname(__file__), "sample_features")
-        matches = []
-        for root, _, files in os.walk(sample_root):
-            if base_name in files:
-                matches.append(os.path.join(root, base_name))
-        if matches:
-            matches.sort()
-            path = matches[0]
-        else:
-            raise FileNotFoundError(f"Missing data file: {path}")
+    """Load an object from a pickle file."""
     with open(path, mode='rb') as f:
         return cloudpickle.load(f)
 

@@ -1,7 +1,7 @@
 
 DATASET_CONFIGS = {
   "D#1": {
-    "data_path": "data/Archived/features_stress_fixed-current_D#1.pkl",
+    "data_path": "data/Archived/features_stress_fixed-full_D#1.pkl",
     "pra_threshold": 0.5,
     "auroc_threshold": 0.5,
     "top_k": 40,
@@ -26,7 +26,7 @@ DATASET_CONFIGS = {
     }
   },
   "D#4": {
-    "data_path": "data/Archived/stress_binary_personal-current.pkl",
+    "data_path": "data/Archived/stress_binary_personal-full.pkl",
     "pra_threshold": 0.65,
     "auroc_threshold": 0.65,
     "top_k": 40,
@@ -71,7 +71,7 @@ DATASET_CONFIGS = {
     }
   },
   "crosscheck": {
-    "data_path": "data/Archived_Tomiris/stress_binary_personal-current.pkl",
+    "data_path": "data/Archived_Tomiris/stress_binary_personal-full.pkl",
     "pra_threshold": 0.7,
     "auroc_threshold": 0.7,
     "top_k": 40,
