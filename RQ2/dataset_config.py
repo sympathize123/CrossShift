@@ -1,7 +1,28 @@
 
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from paths import DATA_ARCHIVED, DATA_TOMIRIS, SAMPLE_ROOT
+
+
+DATA_MODE = os.getenv("CHI_DATA_MODE", "sample").strip().lower()
+if DATA_MODE not in {"sample", "full"}:
+    raise ValueError("CHI_DATA_MODE must be 'sample' or 'full'")
+
+
+def pick_path(sample_path: Path, full_path: Path) -> str:
+    """Select sample or full path based on CHI_DATA_MODE."""
+    return str(sample_path if DATA_MODE == "sample" else full_path)
+
+
 DATASET_CONFIGS = {
   "D#1": {
-    "data_path": "data/Archived/features_stress_fixed-full_D#1.pkl",
+    "data_path": pick_path(
+      SAMPLE_ROOT / "D#1" / "features_stress_fixed-full_D#1.pkl",
+      DATA_ARCHIVED / "features_stress_fixed-full_D#1.pkl",
+    ),
     "pra_threshold": 0.5,
     "auroc_threshold": 0.5,
     "top_k": 40,
@@ -26,7 +47,10 @@ DATASET_CONFIGS = {
     }
   },
   "D#4": {
-    "data_path": "data/Archived/stress_binary_personal-full.pkl",
+    "data_path": pick_path(
+      SAMPLE_ROOT / "D#4" / "stress_binary_personal-full.pkl",
+      DATA_ARCHIVED / "stress_binary_personal-full.pkl",
+    ),
     "pra_threshold": 0.65,
     "auroc_threshold": 0.65,
     "top_k": 40,
@@ -44,7 +68,10 @@ DATASET_CONFIGS = {
     }
   },
   "D#3": {
-    "data_path": "data/Archived/stress_binary_personal-full_D#3.pkl",
+    "data_path": pick_path(
+      SAMPLE_ROOT / "D#3" / "stress_binary_personal-full_D#3.pkl",
+      DATA_ARCHIVED / "stress_binary_personal-full_D#3.pkl",
+    ),
     "pra_threshold": 0.65,
     "auroc_threshold": 0.65,
     "top_k": 40,
@@ -71,7 +98,10 @@ DATASET_CONFIGS = {
     }
   },
   "crosscheck": {
-    "data_path": "data/Archived_Tomiris/stress_binary_personal-full.pkl",
+    "data_path": pick_path(
+      SAMPLE_ROOT / "crosscheck" / "stress_binary_personal-full.pkl",
+      DATA_TOMIRIS / "stress_binary_personal-full.pkl",
+    ),
     "pra_threshold": 0.7,
     "auroc_threshold": 0.7,
     "top_k": 40,
@@ -92,7 +122,10 @@ DATASET_CONFIGS = {
     }
   },
   "studentlife": {
-    "data_path": "data/Archived_Tomiris/stress_binary_personal_sl.pkl",
+    "data_path": pick_path(
+      SAMPLE_ROOT / "studentlife" / "stress_binary_personal_sl.pkl",
+      DATA_TOMIRIS / "stress_binary_personal_sl.pkl",
+    ),
     "pra_threshold": 0.5,
     "auroc_threshold": 0.5,
     "top_k": 40,
@@ -107,7 +140,10 @@ DATASET_CONFIGS = {
     }
   },
   "collegeexperience": {
-    "data_path": "data/Archived/college_experience_stress_binary_fill.pkl",
+    "data_path": pick_path(
+      SAMPLE_ROOT / "collegeexperience" / "college_experience_stress_binary_fill.pkl",
+      DATA_ARCHIVED / "college_experience_stress_binary_fill.pkl",
+    ),
     "pra_threshold": 0.6,
     "auroc_threshold": 0.6,
     "top_k": 40,
@@ -131,7 +167,10 @@ DATASET_CONFIGS = {
     }
   },
   "D#2": {
-    "data_path": "data/Archived/stress_binary_personal-full_D#2.pkl",
+    "data_path": pick_path(
+      SAMPLE_ROOT / "D#2" / "stress_binary_personal-full_D#2.pkl",
+      DATA_ARCHIVED / "stress_binary_personal-full_D#2.pkl",
+    ),
     "pra_threshold": 0.6,
     "auroc_threshold": 0.65,
     "top_k": 40,
@@ -157,7 +196,10 @@ DATASET_CONFIGS = {
     }
   },
   "GLOBEM": {
-    "data_path": "RQ1/data/Overfitting/GLOBEM/Intermediate/depression_globem_combined_no_missing.pkl",
+    "data_path": pick_path(
+      SAMPLE_ROOT / "GLOBEM" / "depression_globem_combined_no_missing.pkl",
+      DATA_ARCHIVED / "depression_globem_combined_no_missing.pkl",
+    ),
     "pra_threshold": 0.5,
     "auroc_threshold": 0.5,
     "top_k": 40,
@@ -175,7 +217,10 @@ DATASET_CONFIGS = {
     }
   },
   "step_count": {
-    "data_path": "data/Archived/step_count_binary_personal-15min.pkl",
+    "data_path": pick_path(
+      SAMPLE_ROOT / "step_count" / "step_count_binary_personal-15min.pkl",
+      DATA_ARCHIVED / "step_count_binary_personal-15min.pkl",
+    ),
     "pra_threshold": 0.8,
     "auroc_threshold": 0.85,
     "top_k": 3,
