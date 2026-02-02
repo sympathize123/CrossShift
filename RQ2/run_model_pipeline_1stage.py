@@ -28,7 +28,7 @@ from sklearn.linear_model import LinearRegression
 from dataset_config import DATASET_CONFIGS
 from pipeline.shift_utils import extract_shift_type_from_text, parse_cat_and_shift_from_key
 from utils.io import load
-from utils.models import get_model_by_name, is_tree_model
+from utils.models import get_model_by_name, is_tree_model, is_deep_model
 from utils.splits import create_train_test_splits
 from utils.stats import fdr_bh_series, sign_test_greater, wilcoxon_greater
 from utility_deep import (
