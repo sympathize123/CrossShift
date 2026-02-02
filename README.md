@@ -19,7 +19,7 @@ visual/                # visualization scripts (not tracked in git)
 results/               # generated outputs (gitignored by default)
 ```
 
-### Sample Feature Files (for reviewers)
+### Sample Feature Files
 
 To keep the anonymized repo lightweight, we include **sample extracted feature files**
 for each dataset (typically a small subset of users/rows). Full feature files will be
@@ -27,7 +27,6 @@ released on the official GitHub.
 
 - RQ1 samples: `RQ1/sample_features/<dataset>/...`
 - RQ2 samples: `RQ2/sample_features/<dataset>/<data_basename>.pkl` (same basename as `RQ2/dataset_config.py`)
-  - Default data mode is sample. To use full data files, set `CHI_DATA_MODE=full`.
 
 ## Quick Start (RQ2)
 
