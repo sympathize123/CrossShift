@@ -14,6 +14,7 @@ RQ2/
   utils/
   pipeline/
   sample_features/     # small sample feature files (reviewers)
+Discussion/
   ood_detection/       # OOD detection code + figure
 visual/                # visualization scripts (not tracked in git)
 results/               # generated outputs (gitignored by default)
@@ -46,12 +47,12 @@ python RQ2/run_model_pipeline_1stage.py \
 - Outputs go under `results/` by default.
 - Override output root with `CHI_RESULTS_DIR=/path/to/results`.
 
-## OOD Detection (RQ2)
+## OOD Detection (Discussion)
 
 The OOD detection code and figure referenced in the paper are provided in:
-- `RQ2/ood_detection/run_ood_detection_loso.py`
-- `RQ2/ood_detection/create_merged_prauc_figure_dataset.py`
-- `RQ2/ood_detection/ood_detection_loso_prauc_merged_D-4.png`
+- `Discussion/ood_detection/run_ood_detection_loso.py`
+- `Discussion/ood_detection/create_merged_prauc_figure_dataset.py`
+- `Discussion/ood_detection/ood_detection_loso_prauc_merged_D-4.png`
 
 ## RQ1 Notes
 
