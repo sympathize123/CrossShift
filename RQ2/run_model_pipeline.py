@@ -374,7 +374,7 @@ def main():
                        choices=['lgbm', 'xgb', 'catboost', 'mlp', 'tabtransformer', 'fttransformer', 'node', 'tabresnet'],
                        help='Model name to run pipeline for')
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
-    parser.add_argument('--dataset', type=str, help='Dataset identifier (e.g., D#1, D#2, studentlife) to load configuration from')
+    parser.add_argument('--dataset', type=str, help='Dataset identifier (e.g., D#1, D#2, K-EmoPhone, studentlife) to load configuration from')
     parser.add_argument('--pra_threshold', type=float, default=0.65, help='PRA threshold for user filtering')
     parser.add_argument('--auroc_threshold', type=float, default=0.65, help='AUROC threshold for anchor users')
     parser.add_argument('--top_k', type=int, default=None, help='Number of top features to select (CLI overrides dataset config; defaults to dataset config or 40)')
@@ -942,7 +942,7 @@ def main():
     if hasattr(args, 'dataset') and args.dataset in DATASET_CONFIGS:
          category_prefixes = DATASET_CONFIGS[args.dataset]["category_prefixes"]
     else:
-         # Fallback default if not specified (D#4 style)
+         # Fallback default if not specified (D#3 style)
          category_prefixes = {
              'PhoneUsage': ['APP', 'WLS', 'CHG', 'Dozemode', 'PWR', 'BAT_TMP', 'SCR', 'BAT', 'Notification', 'RING', 'Time', 'ONOFF', 'keyevent'],
              'Social': ['CALL', 'DATA_SNT', 'DATA_RCV', 'DATA_MRCV', 'DATA_MSNT', 'MSG_SNT', 'MSG_RCV', 'MSG_ALL'],

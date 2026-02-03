@@ -8,7 +8,7 @@ conda activate navsim
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-DATASETS=("D#1" "D#2" "D#3" "D#4" "crosscheck" "studentlife" "step_count" "GLOBEM" "collegeexperience")
+DATASETS=("K-EmoPhone" "D#1" "D#2" "D#3" "crosscheck" "studentlife" "step_count" "GLOBEM" "collegeexperience")
 
 echo "Running xgboost 1-stage pipeline for datasets: ${DATASETS[*]}"
 RESULTS_DIR="${CHI_RESULTS_DIR:-results}"
@@ -43,7 +43,7 @@ import os
 import pandas as pd
 
 results_dir = os.environ.get("CHI_RESULTS_DIR", "results")
-datasets = ["D#1", "D#2", "D#3", "D#4", "crosscheck", "studentlife", "step_count"]
+datasets = ["K-EmoPhone", "D#1", "D#2", "D#3", "crosscheck", "studentlife", "step_count"]
 rows = []
 for ds in datasets:
     path = os.path.join(results_dir, f"distance_figures_xgb_{ds}", "k40", "combined_results_summary.csv")

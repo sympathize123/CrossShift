@@ -29,6 +29,27 @@ released on the official GitHub.
 - RQ1 samples: `RQ1/sample_features/<dataset>/...`
 - RQ2 samples: `RQ2/sample_features/<dataset>/<data_basename>.pkl` (same basename as `RQ2/dataset_config.py`)
 
+## Datasets (Section 3.1)
+
+User-study datasets. We analyzed three independently collected, four-week, in-the-wild user-study datasets
+with 102, 112, and 115 participants, respectively. Throughout the paper, we refer to these datasets as D#1, D#2,
+and D#3. Each dataset features dense per-participant ESM notifications, scheduled at 15, 12, and 10 prompts/day
+(by dataset), yielding high-resolution in-situ emotion/stress labels suitable for real-time mobile stress prediction.
+To minimize demographic confounds, cohorts were curated to be broadly comparable; participants are recruited
+from the same institution. We publicly share the extracted features for the three collected datasets. See
+Appendix A.1 for study design and collection details. Each dataset includes: (i) post-study user information; (ii)
+ESM items (valence, arousal, stress, emotion duration, attention, disturbance, mental load, change checks);
+(iii) smartphone logs (app usage, notifications, calls, messages, device events, key events—absent in D#1—ambient
+light, physical-activity events/transitions, location, data traffic, Wi-Fi scans, and Bluetooth scans); and (iv)
+wearable signals from a Fitbit Inspire HR (calories, steps, distance, heart rate). Polar H10 data were collected
+for the first two datasets but are not analyzed due to inconsistent availability.
+
+Public datasets. We additionally analyze five public in-the-wild datasets: K-EmoPhone, GLOBEM, CrossCheck,
+StudentLife, and the College Experience Study. We follow the preprocessing and feature extraction procedures
+from the original studies. For GLOBEM, we use a merged multi-year version; individual yearly subsets have too
+few labeled samples per user for personalized modeling. Stress is the target label for all datasets except GLOBEM,
+for which we use depression labels.
+
 ## Quick Start (RQ2)
 
 ### Run the Pipeline (1-stage)
@@ -36,7 +57,7 @@ released on the official GitHub.
 ```bash
 python RQ2/run_model_pipeline_1stage.py \
   --model xgb \
-  --dataset D#4 \
+  --dataset D#3 \
   --split_strategy random \
   --test_size 0.2 \
   --pra_threshold 0.65 \

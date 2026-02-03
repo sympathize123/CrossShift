@@ -152,7 +152,7 @@ def main():
         print(f"AUROC Threshold: {args.auroc_threshold}")
         print(f"Top K: {args.top_k if args.top_k is not None else top_k_cfg}")
     else:
-        dataset_path = "data/Archived/stress_binary_personal-full_D#3.pkl"
+        dataset_path = "data/Archived/stress_binary_personal-full.pkl"
         base_name = os.path.splitext(os.path.basename(dataset_path))[0]
         category_prefixes = {
             'PhoneUsage': [
