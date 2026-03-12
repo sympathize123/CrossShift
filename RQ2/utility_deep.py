@@ -118,7 +118,7 @@ DEFAULT_TZ = pytz.FixedOffset(540)  # GMT+09:00; Asia/Seoul
 
 # Repo-local path defaults (override via environment if needed)
 REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
-RAW_ROOT = os.path.join(REPO_ROOT, "data", "raw", "D-1")
+RAW_ROOT = os.path.join(REPO_ROOT, "data", "raw", "K-EmoPhone")
 PATH_DATA = os.environ.get("CHI_RAW_DATA_DIR", RAW_ROOT)
 PATH_ESM = os.path.join(PATH_DATA, "EsmResponse.csv")
 PATH_PARTICIPANT = os.path.join(PATH_DATA, "UserInfo.csv")

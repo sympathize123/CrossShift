@@ -30,7 +30,7 @@ from scipy.stats import levene
 from sklearn.cluster import KMeans
 
 # ---- Run configuration ----
-NORMALIZATION_MODE = 'user'  # 'user' or 'feature'
+NORMALIZATION_MODE = 'feature'  # 'user' or 'feature'
 OUTPUT_DIR = str(RESULTS_ROOT / "RQ1/ConceptShift")
 
 import os, sys
@@ -445,19 +445,26 @@ for profile_name, feature_list in profiles.items():
 chi_results_df = pd.DataFrame(chi_results)
 
 def highlight_significance(val):
-    if val == "SIGNIFICANT":
-        return "background-color: lightgreen"
-    elif val == "Not Significant":
-        return "background-color: lightcoral"
-    else:
-        return ""
+    if val == 'SIGNIFICANT':
+        return 'background-color: lightgreen'
+    if val == 'Not Significant':
+        return 'background-color: lightcoral'
+    return ''
 
-styled_table = chi_results_df.style.applymap(highlight_significance, subset=["Significance"]) \
-                                   .set_properties(**{'text-align': 'center'}) \
-                                   .set_table_styles([dict(selector='th', props=[('text-align', 'center')])])
+# Handle empty results or differing column casing
+sig_col = None
+for candidate in ['Significance', 'significance']:
+    if candidate in chi_results_df.columns:
+        sig_col = candidate
 
-print("Chi-Square Test Summary:")
-display(styled_table)
+print('Chi-Square Test Summary:')
+if sig_col is None:
+    display(chi_results_df)
+else:
+    styled_table = chi_results_df.style.applymap(highlight_significance, subset=[sig_col]) \
+        .set_properties(**{'text-align': 'center'}) \
+        .set_table_styles([dict(selector='th', props=[('text-align', 'center')])])
+    display(styled_table)
 
 # Save Chi-Square summary table
 os.makedirs(OUTPUT_DIR, exist_ok=True)

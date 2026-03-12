@@ -22,7 +22,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-p = os.path.join(str(DATA_ROOT / "Intermediate/hourly_data_interpretable/stress_hourly_f&l.csv"))
+p = os.path.join(PATH_INTERMEDIATE, 'labels_1h_esmsyn.csv')
 df = pd.read_csv(p)
 
 print(df.head())
@@ -84,10 +84,10 @@ plt.tight_layout()
 plt.show()
 
 # Calculate the count of each overall stress label per user
-label_counts_overall = df_selected.groupby(['pcode', 'stress_binary_personal']).size().reset_index(name='count')
+label_counts_overall = df_selected.groupby(['pcode', 'stress_binary_overall']).size().reset_index(name='count')
 
 # Pivot the data to have labels as columns
-label_pivot_overall = label_counts_overall.pivot(index='pcode', columns='stress_binary_personal', values='count').fillna(0)
+label_pivot_overall = label_counts_overall.pivot(index='pcode', columns='stress_binary_overall', values='count').fillna(0)
 
 # Rename columns for clarity
 label_pivot_overall.columns = ['Stress_0_Overall', 'Stress_1_Overall']
@@ -190,7 +190,7 @@ print(f"Personal stress: {interpret_cohens_w(w_personal)} effect")
 # Create contingency table for overall binary stress labels
 contingency_overall_stress = pd.crosstab(
     df_selected['pcode'], 
-    df_selected['stress_binary_personal']  # Assuming 'stress_binary_personal' is the overall label
+    df_selected['stress_binary_overall']
 )
 
 # Perform Chi-Square Test
@@ -200,3 +200,5 @@ print("\nChi-Square Test for Overall Binary Stress Labels")
 print("Chi2 Statistic:", chi2_overall_stress)
 print("p-value:", p_overall_stress)
 print("Degrees of Freedom:", dof_overall_stress)
+
+

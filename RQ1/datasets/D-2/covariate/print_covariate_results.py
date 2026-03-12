@@ -17,7 +17,7 @@ import warnings
 
 DATASET_ROOT = Path(__file__).resolve().parents[1]
 OVERFITTING_ROOT = DATASET_ROOT.parents[2] / "data" / "Overfitting"
-DATA_ROOT = OVERFITTING_ROOT / "D-3"
+DATA_ROOT = OVERFITTING_ROOT / "D-2"
 RESULTS_ROOT = DATASET_ROOT / "results"
 
 if str(DATASET_ROOT) not in sys.path:

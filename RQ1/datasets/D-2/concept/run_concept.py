@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Converted from /var/nfs_share/Overfitting/D-2/Shift_Analysis/Concept_Shift/ESM_multivatiative.ipynb for dataset D-2."""
+"""Converted from /var/nfs_share/Overfitting/D-2/Shift_Analysis/Concept_Shift/ESM_multivariate.ipynb for dataset D-2."""
 
 from pathlib import Path
 import os
@@ -36,7 +36,8 @@ OUTPUT_DIR = str(RESULTS_ROOT / "RQ1/ConceptShift")
 import os, sys
 from Funcs.Utility import *
 
-df = pd.read_csv(str(DATA_ROOT / "Intermediate/hourly_data_interpretable/stress_hourly_f&l.csv"))
+df = pd.read_csv(os.path.join(PATH_INTERMEDIATE_HOURLY_INTERPRETABLE, "stress_hourly_f&l.csv"))
+
 
 
 df.rename(columns={'stress_binary_personal': 'label'}, inplace=True)
@@ -143,54 +144,54 @@ def discretize_df_multivariate(data, cols, pid, profile_name):
     print(f"Multivariate Binarization (KMeans) applied for user {pid} on columns: {cols} -> new column '{new_col}'")
     return df_copy
 
-profiles = {
-    "Physical": [
-        "FitbitHeartrate_count",
-        "FitbitStepcount_count",
-        "Fitbitcalorie_count",
-        "Fitbitdistance_count",
-        "ACT#state_changes"
-    ],
-    "Mobility": [
-        'LOC_NUM_PLCS_VIST', 'LOC_TIME_NONE', 'LOC_TIME_WORK',
-        'LOC_TIME_EATING', 'LOC_TIME_SOCIAL', 'LOC_TIME_OTHERS', 'LOC_TIME_GYM', 'LOC_TIME_HOME'
-    ],
-    "Phone usage": [
-        'APP_DUR_INFO_sum',
-        'APP_DUR_ENTER_sum',
-        'APP_DUR_HEALTH_sum',
-        'APP_DUR_WORK_sum',
-        'keyevent_TIME_sum',
-        'APP_DUR_SOCIAL_sum',
-        'SCR_DUR_sum'
-    ],
-    "Sleep": [
-        'sleep_duration_hr', 'sleep_onset_hour', 'sleep_midpoint_hour'
-    ],
-    "Social": [
-        "MSG#CNT", "CALL#CNT", "CALL#DUR"
-    ]
-}
 # profiles = {
 #     "Physical": [
-#         "Fitbit",
-#         "ACT#"
+#         "FitbitHeartrate_count",
+#         "FitbitStepcount_count",
+#         "Fitbitcalorie_count",
+#         "Fitbitdistance_count",
+#         "ACT#state_changes"
 #     ],
 #     "Mobility": [
-#         'LOC_'
+#         'LOC_NUM_PLCS_VIST', 'LOC_TIME_NONE', 'LOC_TIME_WORK',
+#         'LOC_TIME_EATING', 'LOC_TIME_SOCIAL', 'LOC_TIME_OTHERS', 'LOC_TIME_GYM', 'LOC_TIME_HOME'
 #     ],
 #     "Phone usage": [
-#         'APP_DUR_',
-#         'keyevent_',
-#         'SCR_'
+#         'APP_DUR_INFO_sum',
+#         'APP_DUR_ENTER_sum',
+#         'APP_DUR_HEALTH_sum',
+#         'APP_DUR_WORK_sum',
+#         'keyevent_TIME_sum',
+#         'APP_DUR_SOCIAL_sum',
+#         'SCR_DUR_sum'
 #     ],
 #     "Sleep": [
-#         'sleep_'
+#         'sleep_duration_hr', 'sleep_onset_hour', 'sleep_midpoint_hour'
 #     ],
 #     "Social": [
-#         "MSG#", "CALL#"
+#         "MSG#CNT", "CALL#CNT", "CALL#DUR"
 #     ]
 # }
+profiles = {
+    "Physical": [
+        "Fitbit",
+        "ACT#"
+    ],
+    "Mobility": [
+        'LOC_'
+    ],
+    "Phone usage": [
+        'APP_DUR_',
+        'keyevent_',
+        'SCR_'
+    ],
+    "Sleep": [
+        'sleep_'
+    ],
+    "Social": [
+        "MSG#", "CALL#"
+    ]
+}
 
 # chi_results = []
 
@@ -317,10 +318,11 @@ def get_columns_by_prefix(data, prefixes):
         matching_columns.extend([col for col in data.columns if col.startswith(prefix)])
     return matching_columns
 
+chi_results = []
+
 # Define selected_users as the unique 'pcode' values in df_selected
 selected_users = df_selected['pcode'].unique()
 
-chi_results = []
 
 sns.set(style="whitegrid")
 

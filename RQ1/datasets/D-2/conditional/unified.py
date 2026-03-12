@@ -56,7 +56,7 @@ NORMALIZATION_MODE = env_choice(
 
 # Data types to analyze
 DATA_TYPES = {
-    'phone_usage': ['APP', 'SCR'],
+    'phone_usage': ['keyevent', 'APP', 'SCR'],
     'mobility': ['LOC'],
     'physical_status': ['ACT', 'FCL', 'FAC', 'FDI', 'FST', 'FitbitHeartrate', 'FitbitStepcount', 'Fitbitcalorie', 'Fitbitdistance'],
     'sleep': ['sleep'],
@@ -193,7 +193,6 @@ def ensure_dir(path):
 
 def get_output_paths():
     """Create organized output directory structure and return paths."""
-    PATH_RESULTS= str(RESULTS_ROOT)
     base_dir = PATH_RESULTS
     ensure_dir(base_dir)
     rq1_dir = os.path.join(base_dir, "RQ1")
@@ -225,16 +224,16 @@ def run_analysis_for_label(df_filtered, data_type, feature_patterns, output_path
     for i, feature in enumerate(feature_keys_available, 1):
         print(f"  {i}. {feature}")
     
-    # # Apply social behavior zero filtering if this is social behavior data
-    # if data_type == 'social_behavior':
-    #     print(f"\nApplying social behavior zero filtering for label {label_status}...")
-    #     df_filtered = filter_social_behavior_zeros(df_filtered, feature_keys_available)
+    # Apply social behavior zero filtering if this is social behavior data
+    if data_type == 'social_behavior':
+        print(f"\nApplying social behavior zero filtering for label {label_status}...")
+        df_filtered = filter_social_behavior_zeros(df_filtered, feature_keys_available)
         
-    #     # Re-extract features after filtering
-    #     feature_keys_available = extract_features_by_type(df_filtered, feature_patterns)
-    #     if not feature_keys_available:
-    #         print(f"No social behavior features remaining after zero filtering for label {label_status}. Skipping...")
-    #         return None
+        # Re-extract features after filtering
+        feature_keys_available = extract_features_by_type(df_filtered, feature_patterns)
+        if not feature_keys_available:
+            print(f"No social behavior features remaining after zero filtering for label {label_status}. Skipping...")
+            return None
     
     # Extract feature matrix and align groups
     X = df_filtered[feature_keys_available]
@@ -260,7 +259,6 @@ def run_analysis_for_label(df_filtered, data_type, feature_patterns, output_path
         keep_mask = ~np.isin(groups, bad_groups)
         X = X.loc[keep_mask]
         groups = groups[keep_mask]
-
     if len(groups) == 0:
         print(f"No data remaining after dropping problematic groups for label {label_status}. Skipping...")
         return None
@@ -295,16 +293,12 @@ def run_analysis_for_label(df_filtered, data_type, feature_patterns, output_path
             print(f"After filtering, need at least 2 groups for PERMANOVA/PERMDISP; got {k} for label {label_status}. Skipping...")
             return None
     
-    print(f"Groups for label {label_status}: {groups}")
-    print(f"Unique groups: {unique_groups}, counts: {counts}")
     print(f"Data summary for label {label_status}: N={N}, k={k}, groups={unique_groups.tolist()}, group sizes={counts.tolist()}")
-    
     
     # Distance matrix computation
     print("Computing distance matrix...")
     ids = [f"s{i}" for i in range(N)]
     Xv = X.to_numpy(dtype=np.float64, copy=False)
-
     D = squareform(pdist(Xv, metric='euclidean'))
     distance_matrix = DistanceMatrix(D, ids=ids)
     
@@ -320,42 +314,18 @@ def run_analysis_for_label(df_filtered, data_type, feature_patterns, output_path
     # PERMDISP with error handling
     print("Running PERMDISP...")
     perms_permdisp = int(os.getenv('PERMS_PERMDISP', '100'))
-    min_group_size = counts.min()
-
-    permdisp_skip_reason = None
-    if min_group_size < 2:
-        permdisp_skip_reason = f"min group size {min_group_size} (<2)"
-    else:
-        within_dists = []
-        for g in unique_groups:
-            idx = np.where(groups == g)[0]
-            subgroup = Xv[idx]
-            centroid = subgroup.mean(axis=0)
-            dists_to_centroid = np.linalg.norm(subgroup - centroid, axis=1)
-            within_dists.append(dists_to_centroid)
-        within_dists_flat = np.concatenate(within_dists)
-        if np.allclose(within_dists_flat, 0):
-            permdisp_skip_reason = "zero within-group dispersion (all samples identical per group)"
-        elif np.allclose(np.var(within_dists_flat), 0):
-            permdisp_skip_reason = "near-zero variance in distances to centroids (degenerate dispersion)"
-
-    if permdisp_skip_reason:
-        print(f"Skipping PERMDISP: {permdisp_skip_reason}. Setting results to NaN.")
+    
+    try:
+        permdisp_result = permdisp(distance_matrix, groups, permutations=perms_permdisp, seed=42)
+        F_permdisp = extract_F(permdisp_result)
+        _, eta2, df1_permdisp, df2_permdisp = effect_sizes_oneway(F_permdisp, N, k)
+        r2_permdisp, _, _ = derive_r2_from_f(F_permdisp, N, k)
+        permdisp_p_value = float(permdisp_result['p-value'])
+    except (ZeroDivisionError, ValueError, RuntimeError) as e:
+        print(f"Warning: PERMDISP failed with error: {e}. Setting results to NaN.")
         F_permdisp = np.nan
         r2_permdisp = np.nan
         permdisp_p_value = np.nan
-    else:
-        try:
-            permdisp_result = permdisp(distance_matrix, groups, permutations=perms_permdisp, seed=42)
-            F_permdisp = extract_F(permdisp_result)
-            _, eta2, df1_permdisp, df2_permdisp = effect_sizes_oneway(F_permdisp, N, k)
-            r2_permdisp, _, _ = derive_r2_from_f(F_permdisp, N, k)
-            permdisp_p_value = float(permdisp_result['p-value'])
-        except (ZeroDivisionError, ValueError, RuntimeError) as e:
-            print(f"Warning: PERMDISP failed with error: {e}. Setting results to NaN.")
-            F_permdisp = np.nan
-            r2_permdisp = np.nan
-            permdisp_p_value = np.nan
     
     # PCoA computation
     print("Computing PCoA...")
@@ -493,7 +463,7 @@ if __name__ == "__main__":
     
     # Load data
     print("Loading and preprocessing data...")
-    df_hourly_interpretable = pd.read_csv(str(DATA_ROOT / "Intermediate/hourly_data_interpretable/stress_hourly_f&l.csv"))
+    df_hourly_interpretable = pd.read_csv(os.path.join(PATH_INTERMEDIATE_HOURLY_INTERPRETABLE, 'stress_hourly_f&l.csv'))
     
     # Drop rows with NaN in stress_binary_personal
     print(f"Original data shape: {df_hourly_interpretable.shape}")
@@ -572,7 +542,6 @@ if __name__ == "__main__":
             # Compare labels 0.0 and 1.0
             label_0_data = label_results[0.0]
             label_1_data = label_results[1.0]
-            common_centroid_groups = sorted(set(label_0_data.get('centroids', {})).intersection(label_1_data.get('centroids', {})))
             
             comparison_data['label_comparisons'][data_type] = {
                 'sample_size_comparison': {
@@ -580,22 +549,11 @@ if __name__ == "__main__":
                     'label_1_N': label_1_data['metadata']['N'],
                     'ratio': label_0_data['metadata']['N'] / label_1_data['metadata']['N'] if label_1_data['metadata']['N'] > 0 else float('inf')
                 },
-                 'statistical_comparison': {
+                'statistical_comparison': {
                     'permanova_r2_diff': (label_0_data['statistical_results']['permanova']['r2'] - label_1_data['statistical_results']['permanova']['r2']) if (label_0_data['statistical_results']['permanova']['r2'] is not None and label_1_data['statistical_results']['permanova']['r2'] is not None) else None,
                     'permdisp_r2_diff': (label_0_data['statistical_results']['permdisp']['r2'] - label_1_data['statistical_results']['permdisp']['r2']) if (label_0_data['statistical_results']['permdisp']['r2'] is not None and label_1_data['statistical_results']['permdisp']['r2'] is not None) else None,
-                    'permanova_f_ratio': label_0_data['statistical_results']['permanova']['F_statistic'] / label_1_data['statistical_results']['permanova']['F_statistic'] if (label_0_data['statistical_results']['permanova']['F_statistic'] is not None and label_1_data['statistical_results']['permanova']['F_statistic'] is not None and label_1_data['statistical_results']['permanova']['F_statistic'] > 0) else None,
-                    'permdisp_f_ratio': label_0_data['statistical_results']['permdisp']['F_statistic'] / label_1_data['statistical_results']['permdisp']['F_statistic'] if (label_0_data['statistical_results']['permdisp']['F_statistic'] is not None and label_1_data['statistical_results']['permdisp']['F_statistic'] is not None and label_1_data['statistical_results']['permdisp']['F_statistic'] > 0) else None
-                },
-                'centroid_comparison': {
-                    'label_0_centroids': label_0_data['centroids'],
-                    'label_1_centroids': label_1_data['centroids'],
-                    'common_groups': common_centroid_groups,
-                    'centroid_distance': {
-                        g: float(np.linalg.norm(
-                            np.array(label_0_data['centroids'][g]['PC1_mean'], dtype=float)
-                            - np.array(label_1_data['centroids'][g]['PC1_mean'], dtype=float)
-                        )) for g in common_centroid_groups
-                    }
+                    'permanova_f_ratio': label_0_data['statistical_results']['permanova']['F_statistic'] / label_1_data['statistical_results']['permanova']['F_statistic'] if (label_1_data['statistical_results']['permanova']['F_statistic'] is not None and label_1_data['statistical_results']['permanova']['F_statistic'] > 0) else None,
+                    'permdisp_f_ratio': label_0_data['statistical_results']['permdisp']['F_statistic'] / label_1_data['statistical_results']['permdisp']['F_statistic'] if (label_1_data['statistical_results']['permdisp']['F_statistic'] is not None and label_1_data['statistical_results']['permdisp']['F_statistic'] > 0) else None
                 },
                 'feature_comparison': {
                     'label_0_features': label_0_data['metadata']['features_used'],
@@ -619,4 +577,4 @@ if __name__ == "__main__":
     print(f"Summary file: {summary_filename}")
     print(f"Comparison file: {comparison_filename}")
     print(f"Individual data files saved for each data type and label")
-    print(f"{'='*80}")
+    print(f"{'='*80}") 

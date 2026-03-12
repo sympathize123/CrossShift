@@ -4,12 +4,12 @@ import pandas as pd
 import numpy as np
 import scipy.stats as st
 import cloudpickle
+import ray
 from datetime import datetime
 from contextlib import contextmanager
 import warnings
 import time
 from typing import Optional
-from Funcs.load_valid_users import load_valid_users
 
 
 
@@ -39,6 +39,7 @@ DEFAULT_TZ = pytz.FixedOffset(540)  # GMT+09:00; Asia/Seoul
 PATH_ESM = os.path.join(PATH_DATA, 'SubjData/EsmResponse.csv')
 PATH_PARTICIPANT = os.path.join(PATH_DATA, 'SubjData/UserInfo.csv')
 PATH_SENSOR = os.path.join(PATH_DATA, 'newdata')
+
 
 
 

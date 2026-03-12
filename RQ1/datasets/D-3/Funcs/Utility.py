@@ -42,7 +42,6 @@ PATH_SENSOR = os.path.join(PATH_DATA, 'newdata')
 
 
 
-
 RANDOM_STATE =42
 
 

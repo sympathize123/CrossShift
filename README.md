@@ -57,7 +57,7 @@ for which we use depression labels.
 ```bash
 python RQ2/run_model_pipeline_1stage.py \
   --model xgb \
-  --dataset D#3 \
+  --dataset D-3 \
   --split_strategy random \
   --test_size 0.2 \
   --pra_threshold 0.65 \
@@ -73,7 +73,7 @@ python RQ2/run_model_pipeline_1stage.py \
 The OOD detection code and figure referenced in the paper are provided in:
 - `Discussion/ood_detection/run_ood_detection_loso.py`
 - `Discussion/ood_detection/create_merged_prauc_figure_dataset.py`
-- `Discussion/ood_detection/ood_detection_loso_prauc_merged_D-4.png`
+- `Discussion/ood_detection/ood_detection_loso_prauc_merged_D-3.png`
 
 ## RQ1 Notes
 

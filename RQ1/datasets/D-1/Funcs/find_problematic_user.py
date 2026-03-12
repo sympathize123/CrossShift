@@ -11,7 +11,7 @@ from poi import PoiCluster
 
 # Paths (repo-local)
 DATASET_DIR = Path(__file__).resolve().parents[1]
-RAW_ROOT = DATASET_DIR.parents[2] / "data" / "raw" / "D-2"
+RAW_ROOT = DATASET_DIR.parents[2] / "data" / "raw" / "D-1"
 PATH_DATA = str(RAW_ROOT)
 PATH_SENSOR = os.path.join(PATH_DATA, "newdata")
 

@@ -14,6 +14,7 @@ from skbio.stats.distance import DistanceMatrix, permanova, permdisp
 from skbio.stats.ordination import pcoa
 from sklearn.preprocessing import StandardScaler
 import warnings
+
 import json
 import pickle
 from pathlib import Path
@@ -56,9 +57,9 @@ NORMALIZATION_MODE = env_choice(
 
 # Data types to analyze
 DATA_TYPES = {
-    'phone_usage': ['APP', 'SCR', 'ONF', 'RNG', 'CON', 'CHG', 'BAT', 'PWS'],
-    'mobility': ['LOC', 'DST'],
-    'physical_status': ['ACC', 'ACE', 'AML', 'EDA', 'HRT', 'RRI', 'SKT', 'CAL', 'STP'],
+    'phone_usage': ['APP', 'SCR'],
+    'mobility': ['LOC'],
+    'physical_status': ['ACT', 'FCL', 'FAC', 'FDI', 'FST', 'FitbitHeartrate', 'FitbitStepcount', 'Fitbitcalorie', 'Fitbitdistance'],
     'sleep': ['sleep'],
     'social_behavior': ['CALL', 'MSG']
 }
@@ -194,6 +195,7 @@ def ensure_dir(path):
 
 def get_output_paths():
     """Create organized output directory structure and return paths."""
+    PATH_RESULTS= str(RESULTS_ROOT)
     base_dir = PATH_RESULTS
     ensure_dir(base_dir)
     rq1_dir = os.path.join(base_dir, "RQ1")
@@ -225,21 +227,20 @@ def run_analysis_for_data_type(df_hourly_interpretable, data_type, feature_patte
     for i, feature in enumerate(feature_keys_available, 1):
         print(f"  {i}. {feature}")
     
-    # Apply social behavior zero filtering if this is social behavior data
-    if data_type == 'social_behavior':
-        print(f"\nApplying social behavior zero filtering...")
-        df_hourly_interpretable = filter_social_behavior_zeros(df_hourly_interpretable, feature_keys_available)
+    # # Apply social behavior zero filtering if this is social behavior data
+    # if data_type == 'social_behavior':
+    #     print(f"\nApplying social behavior zero filtering...")
+    #     df_hourly_interpretable = filter_social_behavior_zeros(df_hourly_interpretable, feature_keys_available)
         
-        # Re-extract features after filtering
-        feature_keys_available = extract_features_by_type(df_hourly_interpretable, feature_patterns)
-        if not feature_keys_available:
-            print(f"No social behavior features remaining after zero filtering. Skipping...")
-            return None
+    #     # Re-extract features after filtering
+    #     feature_keys_available = extract_features_by_type(df_hourly_interpretable, feature_patterns)
+    #     if not feature_keys_available:
+    #         print(f"No social behavior features remaining after zero filtering. Skipping...")
+    #         return None
     
     # Extract feature matrix and align groups
     X = df_hourly_interpretable[feature_keys_available]
     groups = robust_groups_from_df(df_hourly_interpretable)
-    
     # Drop rows with any NaNs in X (and align groups)
     mask = np.all(~np.isnan(X.to_numpy(dtype=float, copy=False)), axis=1)
     X = X.loc[mask]
@@ -253,6 +254,7 @@ def run_analysis_for_data_type(df_hourly_interpretable, data_type, feature_patte
         if len(subgroup) < 2:
             bad_groups.append(g)
             continue
+        # zero dispersion if all rows identical
         if np.allclose(subgroup - subgroup.mean(axis=0), 0):
             bad_groups.append(g)
     if bad_groups:
@@ -260,6 +262,7 @@ def run_analysis_for_data_type(df_hourly_interpretable, data_type, feature_patte
         keep_mask = ~np.isin(groups, bad_groups)
         X = X.loc[keep_mask]
         groups = groups[keep_mask]
+
     if len(groups) == 0:
         print("No data remaining after dropping problematic groups. Skipping...")
         return None
@@ -300,6 +303,7 @@ def run_analysis_for_data_type(df_hourly_interpretable, data_type, feature_patte
     print("Computing distance matrix...")
     ids = [f"s{i}" for i in range(N)]
     Xv = X.to_numpy(dtype=np.float64, copy=False)
+
     D = squareform(pdist(Xv, metric='euclidean'))
     distance_matrix = DistanceMatrix(D, ids=ids)
     
@@ -315,18 +319,44 @@ def run_analysis_for_data_type(df_hourly_interpretable, data_type, feature_patte
     # PERMDISP with error handling
     print("Running PERMDISP...")
     perms_permdisp = int(os.getenv('PERMS_PERMDISP', '100'))
-    
-    try:
-        permdisp_result = permdisp(distance_matrix, groups, permutations=perms_permdisp, seed=42)
-        F_permdisp = extract_F(permdisp_result)
-        _, eta2, df1_permdisp, df2_permdisp = effect_sizes_oneway(F_permdisp, N, k)
-        r2_permdisp, _, _ = derive_r2_from_f(F_permdisp, N, k)
-        permdisp_p_value = float(permdisp_result['p-value'])
-    except (ZeroDivisionError, ValueError, RuntimeError) as e:
-        print(f"Warning: PERMDISP failed with error: {e}. Setting results to NaN.")
+    min_group_size = counts.min()
+
+    # Quick guard: PERMDISP is undefined with <2 samples/group or zero within-group dispersion
+    permdisp_skip_reason = None
+    if min_group_size < 2:
+        permdisp_skip_reason = f"min group size {min_group_size} (<2)"
+    else:
+        # check within-group dispersion; if all points coincide with their centroid, permdisp divides by zero
+        within_dists = []
+        for g in unique_groups:
+            idx = np.where(groups == g)[0]
+            subgroup = Xv[idx]
+            centroid = subgroup.mean(axis=0)
+            dists_to_centroid = np.linalg.norm(subgroup - centroid, axis=1)
+            within_dists.append(dists_to_centroid)
+        within_dists_flat = np.concatenate(within_dists)
+        if np.allclose(within_dists_flat, 0):
+            permdisp_skip_reason = "zero within-group dispersion (all samples identical per group)"
+        elif np.allclose(np.var(within_dists_flat), 0):
+            permdisp_skip_reason = "near-zero variance in distances to centroids (degenerate dispersion)"
+
+    if permdisp_skip_reason:
+        print(f"Skipping PERMDISP: {permdisp_skip_reason}. Setting results to NaN.")
         F_permdisp = np.nan
         r2_permdisp = np.nan
         permdisp_p_value = np.nan
+    else:
+        try:
+            permdisp_result = permdisp(distance_matrix, groups, permutations=perms_permdisp, seed=42)
+            F_permdisp = extract_F(permdisp_result)
+            _, eta2, df1_permdisp, df2_permdisp = effect_sizes_oneway(F_permdisp, N, k)
+            r2_permdisp, _, _ = derive_r2_from_f(F_permdisp, N, k)
+            permdisp_p_value = float(permdisp_result['p-value'])
+        except (ZeroDivisionError, ValueError, RuntimeError) as e:
+            print(f"Warning: PERMDISP failed with error: {e}. Setting results to NaN.")
+            F_permdisp = np.nan
+            r2_permdisp = np.nan
+            permdisp_p_value = np.nan
     
     # PCoA computation
     print("Computing PCoA...")
@@ -432,19 +462,11 @@ if __name__ == "__main__":
     
     # Load data
     print("Loading and preprocessing data...")
-    data_path = os.path.join(PATH_INTERMEDIATE, 'features_stress_fixed-current.pkl')
-    with open(data_path, "rb") as f:
-        X, y, groups, t, datetimes = pickle.load(f)
-
-    df_hourly_interpretable = pd.DataFrame(X)
-    df_hourly_interpretable['pcode'] = np.array(groups)
-
-    df_hourly_interpretable = df_hourly_interpretable.dropna(subset=['pcode'])
-    mask = np.all(~np.isnan(df_hourly_interpretable.drop(columns=['pcode'], errors='ignore').to_numpy(dtype=float, copy=False)), axis=1)
-    df_hourly_interpretable = df_hourly_interpretable.loc[mask]
+    df_hourly_interpretable = pd.read_csv(str(DATA_ROOT / "Intermediate/hourly_data_interpretable/stress_hourly_f&l.csv"))
+    df_hourly_interpretable = df_hourly_interpretable.drop(columns=['Unnamed: 0', 'Unnamed: 0.1', 'Unnamed: 0.1.1'], errors='ignore')
     
     if 'pcode' not in df_hourly_interpretable.columns:
-        raise KeyError("Input data must contain a 'pcode' column.")
+        raise KeyError("Input CSV must contain a 'pcode' column.")
     
     # Apply normalization (two scenarios only)
     if NORMALIZATION_MODE == "user":

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Converted from /var/nfs_share/Overfitting/D-1/Shift_Analysis/Concept_Shift /Stress.multivariate.ipynb for dataset D-1."""
+"""Converted from /var/nfs_share/Overfitting/D-1/Shift_Analysis/Concept_Shift/ESM_multivatiative.ipynb for dataset D-1."""
 
 from pathlib import Path
 import os
@@ -33,90 +33,24 @@ from sklearn.cluster import KMeans
 NORMALIZATION_MODE = 'user'  # 'user' or 'feature'
 OUTPUT_DIR = str(RESULTS_ROOT / "RQ1/ConceptShift")
 
-import re
-import pickle
-from collections import defaultdict
+import os, sys
+from Funcs.Utility import *
 
-# === Step 1: Load the .pkl dataset ===
-pkl_path = str(DATA_ROOT / "Intermediate/features_stress_fixed-current.pkl")  # Change this to your actual filename
-with open(pkl_path, "rb") as f:
-    data = pickle.load(f)
-
-# If the pickle file contains a tuple, get the first item (usually a DataFrame)
-df = data[0] if isinstance(data, tuple) else data
-
-# === Step 2: Define category matching patterns ===
-categories = {
-    "Phone usage behavior": [r'APP', r'SCR', r'key-event'],
-    "Social behavior": [r'CAE', r'MSG'],
-    "Physical status": [r'ACT', r'FST', r'FDI', r'FCL', r'ACE', r'STP'],
-    "Mobility": [r'LOC'],
-    "Sleep": [r'Sleep']
-}
-
-# === Step 3: Classify columns ===
-categorized = defaultdict(list)
-uncategorized = []
-
-for col in df.columns:
-    matched = False
-    for cat, patterns in categories.items():
-        if any(re.search(pattern, col, re.IGNORECASE) for pattern in patterns):
-            categorized[cat].append(col)
-            matched = True
-    if not matched:
-        uncategorized.append(col)
-
-# === Step 4: Create summary outputs ===
-categorized_df = pd.DataFrame(
-    [(col, cat) for cat, cols in categorized.items() for col in cols],
-    columns=["Feature", "Category"]
-)
-
-uncategorized_df = pd.DataFrame(uncategorized, columns=["Feature"])
-
-# === Step 5: Save or print results ===
-# categorized_df.to_csv("categorized_features.csv", index=False)
-# uncategorized_df.to_csv("uncategorized_features.csv", index=False)
-
-print("Categorized features saved to 'categorized_features.csv'")
-print("Uncategorized features saved to 'uncategorized_features.csv'")
-
-categorized_df['Category'].value_counts().sort_values(ascending=False)
-
-profiles = {
-    category: categorized_df.loc[categorized_df['Category'] == category, 'Feature'].tolist()
-    for category in categorized_df['Category'].unique()
-}
+df = pd.read_csv(str(DATA_ROOT / "Intermediate/hourly_data_interpretable/stress_hourly_f&l.csv"))
 
 
-X, y, groups, t, datetimes = pickle.load(open(str(DATA_ROOT / "Intermediate/features_stress_fixed-current.pkl"), mode='rb'))
-
-df = pd.DataFrame({'User': groups, 'datetime': datetimes, 'Label': y})
-
-# df_merged = pd.merge(df, X, left_index=True, right_index=True)
-df_merged = pd.merge(df, X, left_index=True, right_index=True)
-
-# Sort the DataFrame by datetime
-df_merged = df_merged.sort_values(by=['User', 'datetime'])
-
-# Update groups and datetimes
-groups_specific = df_merged['User'].to_numpy()
-datetimes = df_merged['datetime'].to_numpy()
-y_specific = df_merged['Label'].to_numpy()
-X = df_merged.drop(columns=['User', 'datetime', 'Label'])
+df.rename(columns={'stress_binary_personal': 'label'}, inplace=True)
 
 # Normalization mode: 'user' or 'feature'
 # If NORMALIZATION_MODE is set above, use it; otherwise fall back to env
 NORMALIZATION_MODE = str(globals().get('NORMALIZATION_MODE', '')).strip().lower() or os.getenv('NORMALIZATION_MODE', 'feature').strip().lower()
-
 if NORMALIZATION_MODE not in {'user', 'feature'}:
     NORMALIZATION_MODE = 'feature'
 
 def normalize_feature_wise(df):
     df_norm = df.copy()
     numeric_cols = df_norm.select_dtypes(include=[np.number]).columns
-    exclude_cols = ['Label']
+    exclude_cols = ['label', 'pcode']
     numeric_cols = [c for c in numeric_cols if c not in exclude_cols]
     for col in numeric_cols:
         vals = pd.to_numeric(df_norm[col], errors='coerce')
@@ -133,9 +67,9 @@ def normalize_feature_wise(df):
 def normalize_user_wise(df):
     df_norm = df.copy()
     numeric_cols = df_norm.select_dtypes(include=[np.number]).columns
-    exclude_cols = ['Label']
+    exclude_cols = ['label', 'pcode']
     numeric_cols = [c for c in numeric_cols if c not in exclude_cols]
-    for user_id, group_data in df_norm.groupby('User'):
+    for user_id, group_data in df_norm.groupby('pcode'):
         if len(group_data) > 1:
             means = group_data[numeric_cols].mean(axis=0)
             stds = group_data[numeric_cols].std(axis=0).replace(0, np.nan)
@@ -145,13 +79,21 @@ def normalize_user_wise(df):
 
 if NORMALIZATION_MODE == 'user':
     print('Applying user-wise normalization...')
-    df_merged = normalize_user_wise(df_merged)
+    df = normalize_user_wise(df)
 else:
     print('Applying feature-wise normalization...')
-    df_merged = normalize_feature_wise(df_merged)
+    df = normalize_feature_wise(df)
 
-unique_users = df_merged['User'].unique()
 
+df['label'] = df['label'].astype(str)
+
+warnings.filterwarnings("ignore")
+
+# Print basic info about the dataset
+print("DataFrame shape:", df.shape)
+print("DataFrame columns:", df.columns.tolist())
+
+df_selected = df
 
 def kmeans_binarize_multivariate(data, cols):
     """
@@ -201,8 +143,187 @@ def discretize_df_multivariate(data, cols, pid, profile_name):
     print(f"Multivariate Binarization (KMeans) applied for user {pid} on columns: {cols} -> new column '{new_col}'")
     return df_copy
 
+profiles = {
+    "Physical": [
+        "FitbitHeartrate_count",
+        "FitbitStepcount_count",
+        "Fitbitcalorie_count",
+        "Fitbitdistance_count",
+        "ACT#state_changes"
+    ],
+    "Mobility": [
+        'LOC_NUM_PLCS_VIST', 'LOC_TIME_NONE', 'LOC_TIME_WORK',
+        'LOC_TIME_EATING', 'LOC_TIME_SOCIAL', 'LOC_TIME_OTHERS', 'LOC_TIME_GYM', 'LOC_TIME_HOME'
+    ],
+    "Phone usage": [
+        'APP_DUR_INFO_sum',
+        'APP_DUR_ENTER_sum',
+        'APP_DUR_HEALTH_sum',
+        'APP_DUR_WORK_sum',
+        'keyevent_TIME_sum',
+        'APP_DUR_SOCIAL_sum',
+        'SCR_DUR_sum'
+    ],
+    "Sleep": [
+        'sleep_duration_hr', 'sleep_onset_hour', 'sleep_midpoint_hour'
+    ],
+    "Social": [
+        "MSG#CNT", "CALL#CNT", "CALL#DUR"
+    ]
+}
+# profiles = {
+#     "Physical": [
+#         "Fitbit",
+#         "ACT#"
+#     ],
+#     "Mobility": [
+#         'LOC_'
+#     ],
+#     "Phone usage": [
+#         'APP_DUR_',
+#         'keyevent_',
+#         'SCR_'
+#     ],
+#     "Sleep": [
+#         'sleep_'
+#     ],
+#     "Social": [
+#         "MSG#", "CALL#"
+#     ]
+# }
+
+# chi_results = []
+
+# sns.set(style="whitegrid")
+
+# # -----------------------------
+# # Iterate over each profile and perform analysis
+# # -----------------------------
+# for profile_name, feature_list in profiles.items():
+#     print(f"\nProcessing profile: {profile_name}")
+    
+#     # Create an empty list to collect discretized data for all users for the current profile
+#     list_df = []
+    
+#     # Discretize the profile for each selected user (user-specific multivariate binarization)
+#     for user in selected_users:
+#         df_user = df_selected[df_selected['pcode'] == user].copy()
+#         df_user_disc = discretize_df_multivariate(df_user, feature_list, user, profile_name)
+#         # Reset the index to keep 'pid'
+#         df_user_disc = df_user_disc.reset_index()  # keep 'pid' as a column
+#         list_df.append(df_user_disc)
+    
+#     # Concatenate the discretized data for all selected users
+#     df_profile = pd.concat(list_df, ignore_index=True)
+    
+#     # The new column name for the profile
+#     profile_col = f"{profile_name}_profile"
+    
+#     # Group by user (pid), the profile category, and the target label
+#     label_counts = df_profile.groupby(['pid', profile_col, 'label']).size().reset_index(name='count')
+    
+#     # Pivot so that each row corresponds to a user and a profile bin, with columns for each label value.
+#     label_pivot = label_counts.pivot_table(index=['pid', profile_col], columns='label', values='count', fill_value=0)
+    
+#     # Calculate percentages (row-wise)
+#     label_pivot_percent = label_pivot.div(label_pivot.sum(axis=1), axis=0) * 100
+#     label_pivot_percent = label_pivot_percent.reset_index()
+    
+#     # Melt the dataframe for plotting
+#     label_melted = label_pivot_percent.melt(id_vars=['pid', profile_col], var_name='Label', value_name='Percentage')
+    
+#     # ---------------------------
+#     # a. Faceted Bar Plot
+#     # ---------------------------
+#     plt.figure()
+#     g = sns.catplot(
+#         data=label_melted,
+#         x="pid", 
+#         y="Percentage", 
+#         hue="Label", 
+#         col=profile_col,
+#         kind="bar", 
+#         height=6, 
+#         aspect=1,
+#         palette="Set2"
+#     )
+#     g.set_axis_labels("User (pid)", "Percentage (%)")
+#     g.set(ylim=(0, 100))
+#     plt.subplots_adjust(top=0.85)
+#     g.fig.suptitle(f'Concept Shift: Distribution of Label by {profile_name} Profile Categories Across Users', fontsize=16)
+#     plt.show()
+    
+#     # ---------------------------
+#     # b. Stacked Bar Charts per Profile Category
+#     # ---------------------------
+#     categories = sorted(label_melted[profile_col].unique())
+#     for cat in categories:
+#         df_cat = label_melted[label_melted[profile_col] == cat]
+#         # Pivot so that rows are users and columns are label percentages
+#         df_cat_pivot = df_cat.pivot(index="pid", columns="Label", values="Percentage").fillna(0)
+#         ax = df_cat_pivot.plot(kind="bar", stacked=True, figsize=(10, 6),
+#                                title=f'Stacked Bar Chart for {profile_name} Profile = {cat}', color=sns.color_palette("Set2"))
+#         plt.xlabel("User (pid)")
+#         plt.ylabel("Percentage (%)")
+#         plt.ylim(0, 100)
+#         plt.legend(title="Label")
+#         plt.tight_layout()
+#         plt.show()
+    
+#     # ---------------------------
+#     # c. Chi-Square Tests: Record results in chi_results list
+#     # ---------------------------
+#     print(f"Chi-Square Test results for profile: {profile_name}")
+#     for cat in categories:
+#         df_cat_counts = df_profile[df_profile[profile_col] == cat]
+#         contingency = pd.crosstab(df_cat_counts['pcode'], df_cat_counts['label'])
+#         if contingency.shape[0] >= 2 and contingency.shape[1] >= 2:
+#             chi2, p, dof, expected = chi2_contingency(contingency)
+#             significance = "SIGNIFICANT" if p < 0.05 else "Not Significant"
+            
+#             # Calculate Cohen's w (effect size)
+#             total_n = contingency.values.sum()
+#             cohens_w = np.sqrt(chi2 / total_n) if total_n > 0 else 0
+            
+#             print(f"  Category {cat}: chi2 = {chi2:.2f}, p-value = {p:.2e}, dof = {dof}, Cohen's w = {cohens_w:.3f} --> {significance}")
+#             chi_results.append({
+#                 "Profile": profile_name,
+#                 "Category": cat,
+#                 "Chi2": round(chi2, 2),
+#                 "p-value": f"{p:.2e}",
+#                 "dof": dof,
+#                 "Cohen's w": round(cohens_w, 3),
+#                 "Significance": significance
+#             })
+#         else:
+#             print(f"  Category {cat}: Not enough data to run chi-square test.")
+#             chi_results.append({
+#                 "Profile": profile_name,
+#                 "Category": cat,
+#                 "Chi2": None,
+#                 "p-value": None,
+#                 "dof": None,
+#                 "Cohen's w": None,
+#                 "Significance": "Not enough data"
+#             })
+
+# Add this function at the beginning of the cell
+def get_columns_by_prefix(data, prefixes):
+    """
+    Get columns that start with any of the given prefixes
+    """
+    matching_columns = []
+    for prefix in prefixes:
+        matching_columns.extend([col for col in data.columns if col.startswith(prefix)])
+    return matching_columns
+
+# Define selected_users as the unique 'pcode' values in df_selected
+selected_users = df_selected['pcode'].unique()
+
 chi_results = []
-all_profile_data = {}
+
+sns.set(style="whitegrid")
+
 # -----------------------------
 # Iterate over each profile and perform analysis
 # -----------------------------
@@ -213,50 +334,98 @@ for profile_name, feature_list in profiles.items():
     list_df = []
     
     # Discretize the profile for each selected user (user-specific multivariate binarization)
-    for user in unique_users:
-        df_user = df_merged[df_merged['User'] == user].copy()
-        df_user_disc = discretize_df_multivariate(df_user, feature_list, user, profile_name)
+    for user in selected_users:
+        df_user = df_selected[df_selected['pcode'] == user].copy()
+        
+        # Get actual columns that match the prefixes
+        actual_columns = get_columns_by_prefix(df_user, feature_list)
+        print(f"  User {user}: Found {len(actual_columns)} columns matching prefixes {feature_list}: {actual_columns}")
+        
+        df_user_disc = discretize_df_multivariate(df_user, actual_columns, user, profile_name)
         # Reset the index to keep 'pid'
         df_user_disc = df_user_disc.reset_index()  # keep 'pid' as a column
         list_df.append(df_user_disc)
     
     # Concatenate the discretized data for all selected users
     df_profile = pd.concat(list_df, ignore_index=True)
-    all_profile_data[profile_name] = df_profile.copy()
     
     # The new column name for the profile
     profile_col = f"{profile_name}_profile"
     
     # Group by user (pid), the profile category, and the target label
-    label_counts = df_profile.groupby(['pid', profile_col, 'Label']).size().reset_index(name='count')
+    label_counts = df_profile.groupby(['pid', profile_col, 'label']).size().reset_index(name='count')
     
     # Pivot so that each row corresponds to a user and a profile bin, with columns for each label value.
-    label_pivot = label_counts.pivot_table(index=['pid', profile_col], columns='Label', values='count', fill_value=0)
-
+    label_pivot = label_counts.pivot_table(index=['pid', profile_col], columns='label', values='count', fill_value=0)
+    
     # Calculate percentages (row-wise)
     label_pivot_percent = label_pivot.div(label_pivot.sum(axis=1), axis=0) * 100
     label_pivot_percent = label_pivot_percent.reset_index()
     
     # Melt the dataframe for plotting
     label_melted = label_pivot_percent.melt(id_vars=['pid', profile_col], var_name='Label', value_name='Percentage')
+    
+    # ---------------------------
+    # a. Faceted Bar Plot
+    # ---------------------------
+    plt.figure()
+    g = sns.catplot(
+        data=label_melted,
+        x="pid", 
+        y="Percentage", 
+        hue="Label", 
+        col=profile_col,
+        kind="bar", 
+        height=6, 
+        aspect=1,
+        palette="Set2"
+    )
+    g.set_axis_labels("User (pid)", "Percentage (%)")
+    g.set(ylim=(0, 100))
+    plt.subplots_adjust(top=0.85)
+    g.fig.suptitle(f'Concept Shift: Distribution of Label by {profile_name} Profile Categories Across Users', fontsize=16)
+    plt.show()
+    
+    # ---------------------------
+    # b. Stacked Bar Charts per Profile Category
+    # ---------------------------
+    categories = sorted(label_melted[profile_col].unique())
+    for cat in categories:
+        df_cat = label_melted[label_melted[profile_col] == cat]
+        # Pivot so that rows are users and columns are label percentages
+        df_cat_pivot = df_cat.pivot(index="pid", columns="Label", values="Percentage").fillna(0)
+        ax = df_cat_pivot.plot(kind="bar", stacked=True, figsize=(10, 6),
+                               title=f'Stacked Bar Chart for {profile_name} Profile = {cat}', color=sns.color_palette("Set2"))
+        plt.xlabel("User (pid)")
+        plt.ylabel("Percentage (%)")
+        plt.ylim(0, 100)
+        plt.legend(title="Label")
+        plt.tight_layout()
+        plt.show()
+    
     # ---------------------------
     # c. Chi-Square Tests: Record results in chi_results list
     # ---------------------------
-    categories = sorted(label_melted[profile_col].unique())
     print(f"Chi-Square Test results for profile: {profile_name}")
     for cat in categories:
         df_cat_counts = df_profile[df_profile[profile_col] == cat]
-        contingency = pd.crosstab(df_cat_counts['User'], df_cat_counts['Label'])
+        contingency = pd.crosstab(df_cat_counts['pcode'], df_cat_counts['label'])
         if contingency.shape[0] >= 2 and contingency.shape[1] >= 2:
             chi2, p, dof, expected = chi2_contingency(contingency)
             significance = "SIGNIFICANT" if p < 0.05 else "Not Significant"
-            print(f"  Category {cat}: chi2 = {chi2:.2f}, p-value = {p:.2e}, dof = {dof} --> {significance}")
+            
+            # Calculate Cohen's w (effect size)
+            total_n = contingency.values.sum()
+            cohens_w = np.sqrt(chi2 / total_n) if total_n > 0 else 0
+            
+            print(f"  Category {cat}: chi2 = {chi2:.2f}, p-value = {p:.2e}, dof = {dof}, Cohen's w = {cohens_w:.3f} --> {significance}")
             chi_results.append({
                 "Profile": profile_name,
                 "Category": cat,
                 "Chi2": round(chi2, 2),
                 "p-value": f"{p:.2e}",
                 "dof": dof,
+                "Cohen's w": round(cohens_w, 3),
                 "Significance": significance
             })
         else:
@@ -267,47 +436,23 @@ for profile_name, feature_list in profiles.items():
                 "Chi2": None,
                 "p-value": None,
                 "dof": None,
+                "Cohen's w": None,
                 "Significance": "Not enough data"
             })
-def get_sample_size(profile_name, category):
-    if profile_name in all_profile_data:
-        df_profile = all_profile_data[profile_name]
-        profile_col = f"{profile_name}_profile"
-        if profile_col in df_profile.columns:
-            subset = df_profile[df_profile[profile_col] == category]
-            return len(subset)
-    return 0
-chi_results_df = pd.DataFrame(chi_results)
-chi_results_df['Sample_Size'] = chi_results_df.apply(
-    lambda row: get_sample_size(row['Profile'], row['Category']), axis=1
-)
 
 chi_results_df = pd.DataFrame(chi_results)
-
-# Add Sample Size column
-chi_results_df['Sample_Size'] = chi_results_df.apply(
-   lambda row: get_sample_size(row['Profile'], row['Category']), axis=1
-)
-
-# Add Cohen's w column
-chi_results_df['Cohens_w'] = chi_results_df.apply(
-   lambda row: (chi_results_df.loc[chi_results_df.index == row.name, 'Chi2'].values[0] / 
-                chi_results_df.loc[chi_results_df.index == row.name, 'Sample_Size'].values[0])**0.5 
-               if chi_results_df.loc[chi_results_df.index == row.name, 'Sample_Size'].values[0] > 0 
-               else 0, axis=1
-)
 
 def highlight_significance(val):
-   if val == "SIGNIFICANT":
-       return "background-color: lightgreen"
-   elif val == "Not Significant":
-       return "background-color: lightcoral"
-   else:
-       return ""
+    if val == "SIGNIFICANT":
+        return "background-color: lightgreen"
+    elif val == "Not Significant":
+        return "background-color: lightcoral"
+    else:
+        return ""
 
 styled_table = chi_results_df.style.applymap(highlight_significance, subset=["Significance"]) \
-                                  .set_properties(**{'text-align': 'center'}) \
-                                  .set_table_styles([dict(selector='th', props=[('text-align', 'center')])])
+                                   .set_properties(**{'text-align': 'center'}) \
+                                   .set_table_styles([dict(selector='th', props=[('text-align', 'center')])])
 
 print("Chi-Square Test Summary:")
 display(styled_table)

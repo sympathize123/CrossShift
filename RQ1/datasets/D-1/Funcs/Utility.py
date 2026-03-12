@@ -4,12 +4,12 @@ import pandas as pd
 import numpy as np
 import scipy.stats as st
 import cloudpickle
-import ray
 from datetime import datetime
 from contextlib import contextmanager
 import warnings
 import time
 from typing import Optional
+from Funcs.load_valid_users import load_valid_users
 
 
 
@@ -36,9 +36,11 @@ PATH_SENSOR = str(DATA_ROOT / "studentlife_data")
 
 DEFAULT_TZ = pytz.FixedOffset(540)  # GMT+09:00; Asia/Seoul
 
-PATH_ESM = os.path.join(PATH_DATA, 'EsmResponse.csv')
-PATH_PARTICIPANT = os.path.join(PATH_DATA, 'UserInfo.csv')
-PATH_SENSOR = os.path.join(PATH_DATA, 'Sensor')
+PATH_ESM = os.path.join(PATH_DATA, 'SubjData/EsmResponse.csv')
+PATH_PARTICIPANT = os.path.join(PATH_DATA, 'SubjData/UserInfo.csv')
+PATH_SENSOR = os.path.join(PATH_DATA, 'newdata')
+
+
 
 RANDOM_STATE =42
 
@@ -46,33 +48,34 @@ RANDOM_STATE =42
 #LABEL_THRESHOLD = 87  # D#1: 31, D#2: 31, D#3: 108, D#4: 87
 seed= RANDOM_STATE
 DATA_TYPES = {
-    'Acceleration': 'ACC',
-    'AmbientLight': 'AML',
-    'Calorie': 'CAL',
-    'Distance': 'DST',
-    'EDA': 'EDA',
-    'HR': 'HRT',
-    'RRI': 'RRI',
-    'SkinTemperature': 'SKT',
-    'StepCount': 'STP',
-    'UltraViolet': 'ULV',
-    'ActivityEvent': 'ACE',
-    'ActivityTransition': 'ACT',
+    'ActivityEvent': 'ACE', #newly added
+    'ActivityTransition': 'ACT',  #newly added
+    'WirelessStateEvent': 'WLS',#newly added
+    'Fitness-Calorie': 'FCL',
+    "Fitness-Activity": "FAC", #newly added
+    "Fitness-Distance": "FDI", #newly added
+    "Fitness-StepCount": "FST", #newly added
     'AppUsageEvent': 'APP',
     'BatteryEvent': 'BAT',
-    'CallEvent': 'CAE',
-    'Connectivity': 'CON',
-    'DataTraffic': 'DAT',
-    'InstalledApp': 'INS',
+    'CallEvent': 'CALL',
+    'DataTraffic': 'DATA',
+    'InstalledApp': 'INST',
     'Location': 'LOC',
-    'MediaEvent': 'MED',
     'MessageEvent': 'MSG',
-    'WiFi': 'WIF',
+    'WifiScan': 'WIFI',
     'ScreenEvent': 'SCR',
-    'RingerModeEvent': 'RNG',
+    'RingerModeEvent': 'RING',
     'ChargeEvent': 'CHG',
-    'PowerSaveEvent': 'PWS',
-    'OnOffEvent': 'ONF'
+    'PowerSaveEvent': 'PWR',
+    'OnOffEvent': 'ONOFF',
+    'BluetoothScan':'BT',
+    'DozeModeEvent': 'Dozemode',
+    'Fitbit-HeartRate':'FitbitHeartrate',
+    'Fitbit-StepCount':'FitbitStepcount', #newly added
+    'Fitbit-Calorie':'Fitbitcalorie', #newly added
+    'Fitbit-Distance':'Fitbitdistance', #newly added
+    'KeyEvent':'keyevent', #newly added
+    'NotificationEvent': 'Notification'
 }
 
 
@@ -133,20 +136,56 @@ def summary(x):
                 'nan_count': n_nan
             }
         
-def _load_data(
-    name: str
-) -> Optional[pd.DataFrame]:
+# def _load_data(
+#     name: str
+# ) -> Optional[pd.DataFrame]:
+#     paths = [
+#         (d, os.path.join(PATH_SENSOR, d, f'{name}.csv'))
+#         for d in os.listdir(PATH_SENSOR)
+#         if d.startswith('P')
+#     ]
+#     return pd.concat(
+#         filter(
+#             lambda x: len(x.index), 
+#             [
+#                 pd.read_csv(p).assign(pcode=pcode)
+#                 for pcode, p in paths
+#                 if os.path.exists(p)
+#             ]
+#         ), ignore_index=True
+#     ).assign(
+#         timestamp=lambda x: pd.to_datetime(x['timestamp'], unit='ms', utc=True).dt.tz_convert(DEFAULT_TZ)
+#     ).set_index(
+#         ['pcode', 'timestamp']
+#     )
+
+def _load_data(name: str) -> Optional[pd.DataFrame]:
     paths = [
         (d, os.path.join(PATH_SENSOR, d, f'{name}.csv'))
         for d in os.listdir(PATH_SENSOR)
         if d.startswith('P')
     ]
+    
+    # Debugging: Print the paths being checked
+    print(f"Paths for {name}: {paths}")
+    
+    valid_paths = [
+        (pcode, p) for pcode, p in paths if os.path.exists(p)
+    ]
+    
+    # Debugging: Print the valid paths found
+    print(f"Valid paths for {name}: {valid_paths}")
+    
+    if not valid_paths:
+        print(f"No valid paths found for {name}")
+        return pd.DataFrame()  # Return an empty DataFrame if no valid paths
+    
     return pd.concat(
         filter(
             lambda x: len(x.index), 
             [
                 pd.read_csv(p).assign(pcode=pcode)
-                for pcode, p in paths
+                for pcode, p in valid_paths
                 if os.path.exists(p)
             ]
         ), ignore_index=True
@@ -155,6 +194,8 @@ def _load_data(
     ).set_index(
         ['pcode', 'timestamp']
     )
+
+
 
 @contextmanager
 def on_ray(*args, **kwargs):
@@ -219,10 +260,16 @@ transform = {
     'EDUCATION': 'WORK',
     'HEALTH_AND_FITNESS': 'HEALTH',
     'MEDICAL': 'HEALTH',
-    'SYSTEM': 'SYSTEM',
     'MISC': 'SYSTEM', # ABC logger
      None: 'UNKNOWN',
-    'UNKNOWN':'UNKNOWN'
+    'UNKNOWN':'UNKNOWN',
+    'INFO': 'INFO',
+    'ENTER': 'ENTER',
+    'SOCIAL': 'SOCIAL',
+    'WORK': 'WORK',
+    'HEALTH': 'HEALTH',
+    'SYSTEM': 'SYSTEM',
+    'UNKNOWN': 'UNKNOWN'
 }
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Converted from /var/nfs_share/Overfitting/D-2/Shift_Analysis/Label_Shift/Stress.ipynb for dataset D-2."""
+"""Converted from /var/nfs_share/Overfitting/D-2/Shift_Analysis/Label_shift/Stress.ipynb for dataset D-2."""
 
 from pathlib import Path
 import os
@@ -22,8 +22,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load the dataset
-df = pd.read_csv(os.path.join( str(DATA_ROOT / "Intermediate/hourly_data_interpretable/stress_hourly_f&l.csv")))
+p = os.path.join(str(DATA_ROOT / "Intermediate/hourly_data_interpretable/stress_hourly_f&l.csv"))
+df = pd.read_csv(p)
 
 print(df.head())
 
@@ -48,6 +48,7 @@ label_pivot_percent = label_pivot_percent.reset_index()
 # Melt the dataframe for seaborn
 label_melted = label_pivot_percent.melt(id_vars='pcode', value_vars=['Stress_0', 'Stress_1'],
                                        var_name='Stress_Level', value_name='Percentage')
+
 
 # Plotting
 plt.figure(figsize=(10, 6))
@@ -186,18 +187,16 @@ print(f"\nEffect Size Interpretation:")
 print(f"Personal stress: {interpret_cohens_w(w_personal)} effect")
 
 
-
-# Create contingency table for personal binary stress labels
-contingency_personal_stress = pd.crosstab(
+# Create contingency table for overall binary stress labels
+contingency_overall_stress = pd.crosstab(
     df_selected['pcode'], 
-    df_selected['stress_binary_personal']
+    df_selected['stress_binary_personal']  # Assuming 'stress_binary_personal' is the overall label
 )
 
 # Perform Chi-Square Test
-chi2_personal_stress, p_personal_stress, dof_personal_stress, ex_personal_stress = chi2_contingency(contingency_personal_stress)
+chi2_overall_stress, p_overall_stress, dof_overall_stress, ex_overall_stress = chi2_contingency(contingency_overall_stress)
 
-print("Chi-Square Test for Personal Binary Stress Labels")
-print("Chi2 Statistic:", chi2_personal_stress)
-print("p-value:", p_personal_stress)
-print("Degrees of Freedom:", dof_personal_stress)
-
+print("\nChi-Square Test for Overall Binary Stress Labels")
+print("Chi2 Statistic:", chi2_overall_stress)
+print("p-value:", p_overall_stress)
+print("Degrees of Freedom:", dof_overall_stress)

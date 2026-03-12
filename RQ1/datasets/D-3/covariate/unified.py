@@ -56,11 +56,11 @@ NORMALIZATION_MODE = env_choice(
 
 # Data types to analyze
 DATA_TYPES = {
-    'phone_usage': ['keyevent', 'APP', 'SCR'],
+    # 'phone_usage': ['keyevent', 'APP', 'SCR'],
     'mobility': ['LOC'],
-    'physical_status': ['ACT', 'FCL', 'FAC', 'FDI', 'FST', 'FitbitHeartrate', 'FitbitStepcount', 'Fitbitcalorie', 'Fitbitdistance'],
-    'sleep': ['sleep'],
-    'social_behavior': ['CALL', 'MSG']
+    # 'physical_status': ['ACT', 'FCL', 'FAC', 'FDI', 'FST', 'FitbitHeartrate', 'FitbitStepcount', 'Fitbitcalorie', 'Fitbitdistance'],
+    # 'sleep': ['sleep'],
+    # 'social_behavior': ['CALL', 'MSG']
 }
 
 # ----------------------------
@@ -244,7 +244,7 @@ def run_analysis_for_data_type(df_hourly_interpretable, data_type, feature_patte
     mask = np.all(~np.isnan(X.to_numpy(dtype=float, copy=False)), axis=1)
     X = X.loc[mask]
     groups = groups[mask]
-
+    
     # Drop groups with <2 rows or zero within-group dispersion
     bad_groups = []
     for g in np.unique(groups):
@@ -263,7 +263,7 @@ def run_analysis_for_data_type(df_hourly_interpretable, data_type, feature_patte
     if len(groups) == 0:
         print("No data remaining after dropping problematic groups. Skipping...")
         return None
-    
+
     # Basic sanity checks
     N = X.shape[0]
     unique_groups, counts = np.unique(groups, return_counts=True)
