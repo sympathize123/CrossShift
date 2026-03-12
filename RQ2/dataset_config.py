@@ -23,8 +23,8 @@ def pick_path(sample_path: Path, full_path: Path) -> str:
 DATASET_CONFIGS = {
   "K-EmoPhone": {
     "data_path": pick_path(
-      SAMPLE_ROOT / "K-EmoPhone" / "features_stress_fixed-full_D#1.pkl",
-      DATA_ARCHIVED / "features_stress_fixed-full_D#1.pkl",
+      SAMPLE_ROOT / "K-EmoPhone" / "features_stress_fixed-full_K-EmoPhone.pkl",
+      DATA_ARCHIVED / "features_stress_fixed-full_K-EmoPhone.pkl",
     ),
     "pra_threshold": 0.5,
     "auroc_threshold": 0.5,
@@ -49,10 +49,10 @@ DATASET_CONFIGS = {
       "Sleep": ["Sleep"]
     }
   },
-  "D#3": {
+  "D-3": {
     "data_path": pick_path(
-      SAMPLE_ROOT / "D#3" / "stress_binary_personal-full.pkl",
-      DATA_ARCHIVED / "stress_binary_personal-full.pkl",
+      SAMPLE_ROOT / "D-3" / "stress_binary_personal-full_D-3.pkl",
+      DATA_ARCHIVED / "stress_binary_personal-full_D-3.pkl",
     ),
     "pra_threshold": 0.65,
     "auroc_threshold": 0.65,
@@ -70,10 +70,10 @@ DATASET_CONFIGS = {
       "Sleep": ["sleep", "Sleep"]
     }
   },
-  "D#2": {
+  "D-2": {
     "data_path": pick_path(
-      SAMPLE_ROOT / "D#2" / "stress_binary_personal-full_D#3.pkl",
-      DATA_ARCHIVED / "stress_binary_personal-full_D#3.pkl",
+      SAMPLE_ROOT / "D-2" / "stress_binary_personal-full_D-2.pkl",
+      DATA_ARCHIVED / "stress_binary_personal-full_D-2.pkl",
     ),
     "pra_threshold": 0.65,
     "auroc_threshold": 0.65,
@@ -169,10 +169,10 @@ DATASET_CONFIGS = {
       ]
     }
   },
-  "D#1": {
+  "D-1": {
     "data_path": pick_path(
-      SAMPLE_ROOT / "D#1" / "stress_binary_personal-full_D#2.pkl",
-      DATA_ARCHIVED / "stress_binary_personal-full_D#2.pkl",
+      SAMPLE_ROOT / "D-1" / "stress_binary_personal-full_D-1.pkl",
+      DATA_ARCHIVED / "stress_binary_personal-full_D-1.pkl",
     ),
     "pra_threshold": 0.6,
     "auroc_threshold": 0.65,
